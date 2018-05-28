@@ -138,5 +138,3 @@ def play_game(size, winning_length, player1, player2):
         side_to_play = -side_to_play
 
     return winner
-
-
