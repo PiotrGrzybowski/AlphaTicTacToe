@@ -120,6 +120,76 @@ def determine_board_winner(board, winning_length):
     return 0
 
 
+def _evaluate_line(line, winning_length):
+    count = 0
+    last_side = 0
+    score = 0
+    neutrals = 0
+
+    for x in line:
+        if x == last_side:
+            count += 1
+            if count == winning_length and neutrals == 0:
+                return 100000 * x  # a side has already won here
+        elif x == 0:  # we could score here
+            neutrals += 1
+        elif x == -last_side:
+            if neutrals + count >= winning_length:
+                score += (count - 1) * last_side
+            count = 1
+            last_side = x
+            neutrals = 0
+        else:
+            last_side = x
+            count = 1
+
+    if neutrals + count >= winning_length:
+        score += (count - 1) * last_side
+
+    return score
+
+
+def evaluate(board_state, winning_length):
+    """An evaluation function for this game, gives an estimate of how good the board position is for the plus player.
+    There is no specific range for the values returned, they just need to be relative to each other.
+
+    Args:
+        winning_length (int): The length needed to win a game
+        board_state (tuple): State of the board
+
+    Returns:
+        number
+    """
+    board_width = len(board_state)
+    board_height = len(board_state[0])
+
+    score = 0
+
+    # check rows
+    for x in range(board_width):
+        score += _evaluate_line(board_state[x], winning_length)
+    # check columns
+    for y in range(board_height):
+        score += _evaluate_line((i[y] for i in board_state), winning_length)
+
+    # check diagonals
+    diagonals_start = -(board_width - winning_length)
+    diagonals_end = (board_width - winning_length)
+    for d in range(diagonals_start, diagonals_end + 1):
+        score += _evaluate_line(
+            (board_state[i][i + d] for i in range(max(-d, 0), min(board_width, board_height - d))),
+            winning_length)
+    for d in range(diagonals_start, diagonals_end + 1):
+        score += _evaluate_line(
+            (board_state[i][board_height - i - d - 1] for i in range(max(-d, 0), min(board_width, board_height - d))),
+            winning_length)
+
+    return score
+
+def hash_board(board):
+    return ''.join(map(str, (itertools.chain(*board.tolist()))))
+
+
 def player_to_play(player1, player2, side_to_play):
     return player1 if side_to_play == 1 else player2
 
