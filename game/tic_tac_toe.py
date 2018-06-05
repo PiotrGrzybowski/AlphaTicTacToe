@@ -186,6 +186,7 @@ def evaluate(board_state, winning_length):
 
     return score
 
+
 def hash_board(board):
     return ''.join(map(str, (itertools.chain(*board.tolist()))))
 
@@ -208,3 +209,58 @@ def play_game(size, winning_length, player1, player2):
         side_to_play = -side_to_play
 
     return winner
+
+
+def generate_boards(board, side_to_play):
+    legal_moves = available_moves(board)
+    winner = determine_board_winner(board, 3)
+    if len(legal_moves) == 0 or winner != 0:
+        return [board.tolist()]
+    else:
+        result = []
+        for move in legal_moves:
+            new_board = apply_move(board, move, side_to_play)
+            result_board = generate_boards(new_board, -side_to_play)
+            if new_board.tolist() not in result_board:
+                result.append(new_board.tolist())
+
+            result += result_board
+        return result
+
+
+def generate_winners(board, side_to_play):
+    legal_moves = available_moves(board)
+    winner = determine_board_winner(board, 3)
+    if len(legal_moves) == 0 or winner != 0:
+        return [winner]
+    else:
+        result = []
+        for move in legal_moves:
+            new_board = apply_move(board, move, side_to_play)
+            result += generate_winners(new_board, -side_to_play)
+    return result
+
+
+if __name__ == '__main__':
+    # board = clean_board(3)
+    board = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    side_to_play = -1
+    # print("{} -> {}".format(board.tolist(), np.mean(generate_winners(np.array(board), side_to_play))))
+    states = generate_boards(board, side_to_play)
+    import itertools
+    states_set = sorted(states, reverse=True)
+    states_set = list(k for k, _ in itertools.groupby(states_set))
+
+    print(len(states_set))
+
+    # for s in states_set:
+    #     print("{} -> {}".format(s, np.mean(generate_winners(np.array(s), side_to_play))))
+
+    X = np.array(states_set).reshape(len(states_set), 9)
+    Y = np.array([np.mean(generate_winners(np.array(s), side_to_play)) for s in states_set]).reshape(len(states_set), 1)
+
+    print(X.shape)
+    print(Y.shape)
+
+    np.save('X.npy', X)
+    np.save('Y.npy', Y)
