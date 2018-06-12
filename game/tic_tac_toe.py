@@ -120,6 +120,14 @@ def determine_board_winner(board, winning_length):
     return 0
 
 
+def flat_move_to_tuple(board, move_index):
+    if len(board.shape) == 1:
+        return move_index
+
+    board_x = board.shape[0]
+    return int(move_index / board_x), move_index % board_x
+
+
 def _evaluate_line(line, winning_length):
     count = 0
     last_side = 0
@@ -211,6 +219,39 @@ def play_game(size, winning_length, player1, player2):
     return winner
 
 
+def playya_game(board_size, plus_player_func, minus_player_func, log=False, winning_length=3):
+    board = clean_board(board_size)
+    side_to_play = 1
+    while True:
+        legal_moves = available_moves(board)
+
+        if len(legal_moves) == 0:
+            if log:
+                print("no moves left, game ended a draw")
+            return 0.
+
+        if side_to_play == 1:
+            move = plus_player_func(board, 1)
+        else:
+            move = minus_player_func(board, -1)
+
+        if move not in legal_moves:
+            if log:
+                print("illegal move: {}, for player: {}".format(move, side_to_play))
+            return -side_to_play
+
+        board = apply_move(board, move, side_to_play)
+        if log:
+            print(board)
+
+        winner = determine_board_winner(board, winning_length)
+        if winner != 0:
+            if log:
+                print("we have a winner, side: %s" % side_to_play)
+            return winner
+        side_to_play = -side_to_play
+
+
 def generate_boards(board, side_to_play):
     legal_moves = available_moves(board)
     winner = determine_board_winner(board, 3)
@@ -239,28 +280,3 @@ def generate_winners(board, side_to_play):
             new_board = apply_move(board, move, side_to_play)
             result += generate_winners(new_board, -side_to_play)
     return result
-
-
-if __name__ == '__main__':
-    # board = clean_board(3)
-    board = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    side_to_play = -1
-    # print("{} -> {}".format(board.tolist(), np.mean(generate_winners(np.array(board), side_to_play))))
-    states = generate_boards(board, side_to_play)
-    import itertools
-    states_set = sorted(states, reverse=True)
-    states_set = list(k for k, _ in itertools.groupby(states_set))
-
-    print(len(states_set))
-
-    # for s in states_set:
-    #     print("{} -> {}".format(s, np.mean(generate_winners(np.array(s), side_to_play))))
-
-    X = np.array(states_set).reshape(len(states_set), 9)
-    Y = np.array([np.mean(generate_winners(np.array(s), side_to_play)) for s in states_set]).reshape(len(states_set), 1)
-
-    print(X.shape)
-    print(Y.shape)
-
-    np.save('X.npy', X)
-    np.save('Y.npy', Y)

@@ -11,5 +11,5 @@ class RandomPlayer:
     def __init__(self, side):
         self.side = side
 
-    def get_move(self, board):
+    def get_move(self, board, side):
         return random.choice(available_moves(board))
